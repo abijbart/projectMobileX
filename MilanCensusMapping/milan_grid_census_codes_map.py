@@ -93,23 +93,31 @@ def create_sezioni_censimento_millan_grid_map():
         grid[milanPolygon['cellId']] = []
         for censusPolygon in censusPolygons:
 
+            censusArea = censusPolygon['polygon'].area
             if milanPolygon['polygon'].overlaps(censusPolygon['polygon']):
 
                 # Save the percentage area overlap in 'areaPercentage'
                 # and the codes in 'censusCodes'
                 # Creating a list of dictionaries with these two keys
-                areaPercentage = milanPolygon['polygon'].intersection(
+                intersectArea = milanPolygon['polygon'].intersection(
                     censusPolygon['polygon']
-                ).area / milanArea
+                ).area
+                milanAreaPercentage = intersectArea / milanArea
+                censusAreaPercentage = intersectArea / censusArea
 
                 # Round what is effectively float error
-                if areaPercentage < 1e-4:
-                    areaPercentage = 0
-                elif areaPercentage > 0.9999:
-                    areaPercentage = 1
+                if milanAreaPercentage < 1e-4:
+                    milanAreaPercentage = 0
+                elif milanAreaPercentage > 0.9999:
+                    milanAreaPercentage = 1
+                if censusAreaPercentage < 1e-4:
+                    censusAreaPercentage = 0
+                elif censusAreaPercentage > 0.9999:
+                    censusAreaPercentage = 1
 
                 milanSection = {
-                    'areaPercentage': areaPercentage,
+                    'censusAreaPercentage': censusAreaPercentage,
+                    'milanAreaPercentage': milanAreaPercentage,
                     'censusCodes': censusPolygon
                 }
                 grid[milanPolygon['cellId']].append(milanSection)
@@ -124,9 +132,9 @@ def create_sezioni_censimento_millan_grid_map():
             except KeyError:
                 pass
 
-    with open('milan_grid_census_codes_map_percents.json', 'w') as stream:
+    with open('milan_grid_census_codes_map_percents_both.json', 'w') as stream:
         json.dump(grid, stream)
 
 
 if __name__ == "__main__":
-    #create_sezioni_censimento_millan_grid_map()
+    create_sezioni_censimento_millan_grid_map()
