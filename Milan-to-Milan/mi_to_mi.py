@@ -20,7 +20,7 @@ import networkx
 
 # These paths must be changed to wherever the data is
 DATA_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
-CELL_MAPPING_PATH = Path(DATA_DIR.parent, 'MilanCensusMapping', 'milan_grid_census_codes_map.json')
+CELL_MAPPING_PATH = Path(DATA_DIR.parent, 'milan_grid_census_codes_map.json')
 
 
 def relation_graph_to_json():
@@ -145,10 +145,44 @@ def aggregate_dates():
                 except KeyError:
                     graph.add_edge(node1, node2, weight=w)
 
-        with open(f'milian_to_milian_weighted_undir_graph_aggregate.pickle', 'wb') as stream:
+        with open('milian_to_milian_weighted_undir_graph_aggregate_21-30.pickle', 'wb') as stream:
             pickle.dump(graph, stream)
+
+# Aggregate pickles over date ranges into one NetworkX pickle
+def aggregate_pickles():
+
+    if not DATA_DIR.is_dir():
+        raise FileNotFoundError(DATA_DIR)
+
+    netx = None
+    pick = None
+    for filePath in DATA_DIR.iterdir():
+
+        if filePath.suffix != '.pickle':
+            continue
+
+        pick = None
+        gc.collect()
+        with open(filePath, 'rb') as stream:
+            pick = pickle.load(stream)
+
+        if netx is None:
+            netx = pick
+            continue
+
+        for node1, node2, attr in pick.edges(data=True):
+            try:
+                netx.edges[node1, node2]['weight'] += attr['weight']
+            except KeyError:
+                netx.add_edge(node1, node2, weight=attr['weight'])
+
+    pick = None
+    gc.collect()
+    with open('milian_to_milian_weighted_undir_graph_aggregate_01-30.pickle', 'wb') as stream:
+        pickle.dump(netx, stream)
 
 
 if __name__ == "__main__":
     #relation_graph_to_json()
     #aggregate_dates()
+    #aggregate_pickles()
