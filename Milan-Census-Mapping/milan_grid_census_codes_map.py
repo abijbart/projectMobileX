@@ -22,6 +22,7 @@ from shapely.geometry import Polygon
 
 # You will need to change these paths to match your local system
 DATA_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
+CENSUS_POLYGONS_PATH = Path(DATA_DIR, 'census_polygons.json')
 MILAN_GRID_GEOJSON = Path(DATA_DIR.parent, 'dataset/milano-grid.geojson')
 # The census codes are burried in HTML in the geojson
 # Parsing the HTML is excessive. The HTML is small enough that it's easier to
@@ -135,6 +136,41 @@ def create_sezioni_censimento_millan_grid_map():
     with open('milan_grid_census_codes_map_percents_both.json', 'w') as stream:
         json.dump(grid, stream)
 
+def create_census_polygons():
+
+    censusPolygons = []
+    censusGeojsonPath = Path(DATA_DIR, 'CensusGeojson')
+    for geojsonPath in censusGeojsonPath.iterdir():
+
+        with open(geojsonPath, 'r') as stream:
+
+            geojsonDump = geojson.load(stream)
+            for feature in geojsonDump['features']:
+
+                if (
+                    feature['type'] == 'Feature'
+                    and feature['geometry']['type'] == 'Polygon'
+                ):
+
+                    matches = GEOJSON_CODES_REGEX.finditer(
+                        feature['properties']['description']
+                    )
+                    if matches:
+
+                        # For some reason there's an extra list on the cooridnates
+                        # That messes up the contructor of Polygon
+                        censusPolygon = {
+                            'polygon': feature['geometry']['coordinates'][0]
+                        }
+                        for match in matches:
+                            censusPolygon[match.group('code').replace('_', '')] = match.group('val')
+
+                        censusPolygons.append(censusPolygon)
+
+    with open(CENSUS_POLYGONS_PATH, 'w') as stream:
+        json.dump(censusPolygons, stream)
+
 
 if __name__ == "__main__":
-    create_sezioni_censimento_millan_grid_map()
+    #create_sezioni_censimento_millan_grid_map()
+    #create_census_polygons()
